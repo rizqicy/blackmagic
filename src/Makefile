@@ -49,6 +49,8 @@ SRC =			\
 	platform.c	\
 	remote.c	\
 	rp.c		\
+	riscv0_13.c	\
+	riscv0_13_jtag.c	\
 	sam3x.c		\
 	sam4l.c		\
 	samd.c		\

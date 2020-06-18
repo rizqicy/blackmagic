@@ -22,6 +22,7 @@
 #include "general.h"
 #include "jtag_scan.h"
 #include "adiv5.h"
+#include "riscv.h"
 #include "jtag_devs.h"
 
 jtag_dev_descr_t dev_descr[] = {
@@ -62,11 +63,15 @@ jtag_dev_descr_t dev_descr[] = {
 		.descr = "Xambala: RVDBG013."},
 	{.idcode = 0x000007A3, .idmask = 0x00000FFF,
 		.descr = "Gigadevice BSD."},
+	{.idcode = 0x1000563D, .idmask = 0xFFFFFFFF,
+		.descr = "GD32VF103CBT6.",
+		.handler = rvdbg013_jtag_dp_handler},
 /* Just for fun, unsupported */
 	{.idcode = 0x8940303F, .idmask = 0xFFFFFFFF, .descr = "ATMega16."},
 	{.idcode = 0x0792603F, .idmask = 0xFFFFFFFF, .descr = "AT91SAM9261."},
 	{.idcode = 0x20270013, .idmask = 0xFFFFFFFF, .descr = "i80386ex."},
 	{.idcode = 0x07B7617F, .idmask = 0xFFFFFFFF, .descr = "BCM2835."},
 	{.idcode = 0x4BA00477, .idmask = 0xFFFFFFFF, .descr = "BCM2836."},
+	{.idcode = 0x790007A3, .idmask = 0xFFFFFFFF, .descr = "GD32VF103CBT6 (BSD)."},
 	{.idcode = 0, .idmask = 0, .descr = "Unknown"},
 };

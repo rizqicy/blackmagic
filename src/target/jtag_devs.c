@@ -66,6 +66,9 @@ jtag_dev_descr_t dev_descr[] = {
 	{.idcode = 0x1000563D, .idmask = 0xFFFFFFFF,
 		.descr = "GD32VF103CBT6.",
 		.handler = rvdbg013_jtag_dp_handler},
+	{.idcode = 0x00000C25, .idmask = 0x00000FFF,
+		.descr = "ESP32-C3.",
+		.handler = rvdbg013_jtag_dp_handler},
 /* Just for fun, unsupported */
 	{.idcode = 0x8940303F, .idmask = 0xFFFFFFFF, .descr = "ATMega16."},
 	{.idcode = 0x0792603F, .idmask = 0xFFFFFFFF, .descr = "AT91SAM9261."},

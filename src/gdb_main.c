@@ -51,7 +51,7 @@ enum gdb_signal {
 #define BUF_SIZE	1024U
 
 #define ERROR_IF_NO_TARGET()	\
-	if(!cur_target) { gdb_putpacketz("EFF"); break; }
+	if(!cur_target) { DEBUG_WARN("No trarget\n"); gdb_putpacketz("EFF"); break; }
 
 typedef struct
 {

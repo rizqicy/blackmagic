@@ -129,20 +129,24 @@ bool gd32f1_probe(target *t)
 	uint32_t flashSize = signature & 0xFFFF;
 	uint32_t ramSize = signature >> 16;
 
-	switch (t->idcode) {
-	case 0x414: /* Gigadevice gd32f303 */
-	case 0x430:
-		t->driver = "GD32F3";
-		break;
-	case 0x410: /* Gigadevice gd32f103, gd32e230 */
-		if ((t->cpuid & CPUID_PARTNO_MASK) == CORTEX_M23)
-			t->driver = "GD32E230";
-		else
-			t->driver = "GD32F1";
-		break;
-	default:
-		t->idcode = stored_idcode;
-		return false;
+	if (t->cpuid == 0x80000022) /* GD32VF103 */ {
+		t->driver = "GD32VF1";
+	} else {
+		switch (t->idcode) {
+		case 0x414: /* Gigadevice gd32f303 */
+		case 0x430:
+			t->driver = "GD32F3";
+			break;
+		case 0x410: /* Gigadevice gd32f103, gd32e230 */
+			if ((t->cpuid & CPUID_PARTNO_MASK) == CORTEX_M23)
+				t->driver = "GD32E230";
+			else
+				t->driver = "GD32F1";
+			break;
+		default:
+			t->idcode = stored_idcode;
+			return false;
+		}
 	}
 
 	t->mass_erase = stm32f1_mass_erase;

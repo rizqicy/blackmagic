@@ -63,6 +63,8 @@ jtag_dev_descr_t dev_descr[] = {
 		.descr = "Xambala: RVDBG013."},
 	{.idcode = 0x000007A3, .idmask = 0x00000FFF,
 		.descr = "Gigadevice BSD."},
+	{.idcode = 0x0000096B, .idmask = 0x00000FFF,
+		.descr = "K210 RVDBG011."},
 	{.idcode = 0x1000563D, .idmask = 0xFFFFFFFF,
 		.descr = "GD32VF103CBT6.",
 		.handler = rvdbg013_jtag_dp_handler},

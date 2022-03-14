@@ -214,6 +214,9 @@ int jtag_scan(const uint8_t *irlens)
 				jtag_devs[i].current_ir = -1;
 				/* Save description in table */
 				jtag_devs[i].jd_descr = dev_descr[j].descr;
+				/* Special handling for Xilinx devices to make sure irlen is right */
+				if (dev_descr[j].idcode == 0x00000093)
+					jtag_devs[i].ir_len = 6;
 				/* Call handler to initialise/probe device further */
 				if(dev_descr[j].handler)
 					dev_descr[j].handler(i);

@@ -106,6 +106,7 @@
 #define AP_DESIGNER_STM32WX      0x420
 #define AP_DESIGNER_CYPRESS      0x034
 #define AP_DESIGNER_INFINEON     0x041
+#define AP_DESIGNER_XILINX       0x049
 #define AP_DESIGNER_NORDIC       0x244
 #define AP_DESIGNER_ARM          0x43b
 /*LPC845 with designer 501. Strange!? */

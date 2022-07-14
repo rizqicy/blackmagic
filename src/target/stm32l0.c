@@ -131,10 +131,10 @@
 #define STM32L0_NVM_OPTR_BOOT1    (1U << 31U)
 #define STM32Lx_NVM_OPTR_WDG_SW   (1U << 20U)
 #define STM32L0_NVM_OPTR_WPRMOD   (1U << 8U)
-#define STM32Lx_NVM_OPTR_RDPROT_S (0U)
-#define STM32Lx_NVM_OPTR_RDPROT_M (0xffU)
-#define STM32Lx_NVM_OPTR_RDPROT_0 (0xaaU)
-#define STM32Lx_NVM_OPTR_RDPROT_2 (0xccU)
+#define STM32Lx_NVM_OPTR_RDPROT_S 0U
+#define STM32Lx_NVM_OPTR_RDPROT_M 0xffU
+#define STM32Lx_NVM_OPTR_RDPROT_0 0xaaU
+#define STM32Lx_NVM_OPTR_RDPROT_2 0xccU
 
 #define STM32L1_NVM_OPTR_nBFB2      (1U << 23U)
 #define STM32L1_NVM_OPTR_nRST_STDBY (1U << 22U)
@@ -149,6 +149,8 @@ static bool stm32lx_nvm_prog_write(target_flash_s *f, target_addr_t destination,
 static bool stm32lx_nvm_data_erase(target_flash_s *f, target_addr_t addr, size_t len);
 static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t destination, const void *source, size_t size);
 
+static bool stm32lx_protected_attach(target *t);
+
 static bool stm32lx_cmd_option(target *t, int argc, char **argv);
 static bool stm32lx_cmd_eeprom(target *t, int argc, char **argv);
 
@@ -162,6 +164,10 @@ enum stm32l_idcode_e {
 	STM32L0_DBGMCU_IDCODE_PHYS = 0x40015800,
 	STM32L1_DBGMCU_IDCODE_PHYS = 0xe0042000,
 };
+
+typedef struct stm32l_priv_s {
+	char stm32l_variant[21];
+} stm32l_priv_t;
 
 static bool stm32lx_is_stm32l1(target *t)
 {
@@ -265,7 +271,7 @@ bool stm32l0_probe(target *t)
 		stm32l_add_flash(t, 0x8000000, 0x80000, 0x100);
 		//stm32l_add_eeprom(t, 0x8080000, 0x4000);
 		target_add_commands(t, stm32lx_cmd_list, "STM32L1x");
-		return true;
+		break;
 	case 0x457: /* STM32L0xx Cat1 */
 	case 0x425: /* STM32L0xx Cat2 */
 	case 0x417: /* STM32L0xx Cat3 */
@@ -277,10 +283,28 @@ bool stm32l0_probe(target *t)
 		stm32l_add_flash(t, 0x8020000, 0x10000, 0x80);
 		stm32l_add_eeprom(t, 0x8080000, 0x1800);
 		target_add_commands(t, stm32lx_cmd_list, "STM32L0x");
-		return true;
+		break;
+	default:
+		return false;
 	}
 
-	return false;
+	stm32l_priv_t *priv_storage = calloc(1, sizeof(*priv_storage));
+	if (!priv_storage) {
+		DEBUG_WARN("calloc: failed in %s\n", __func__);
+		return false;
+	}
+	t->target_storage = (void *)priv_storage;
+
+	const uint32_t nvm = stm32lx_nvm_phys(t);
+	const bool protected =
+		(target_mem_read32(t, STM32Lx_NVM_OPTR(nvm)) & STM32Lx_NVM_OPTR_RDPROT_M) != STM32Lx_NVM_OPTR_RDPROT_0;
+	sprintf(priv_storage->stm32l_variant, "%s%s", t->driver, protected ? " (protected)" : "");
+	t->driver = priv_storage->stm32l_variant;
+
+	if (protected)
+		t->attach = stm32lx_protected_attach;
+
+	return true;
 }
 
 /** Lock the NVM control registers preventing writes or erases. */
@@ -469,6 +493,13 @@ static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t destination,
 
 	/* Wait for completion or an error */
 	return stm32lx_nvm_busy_wait(t, nvm);
+}
+
+static bool stm32lx_protected_attach(target *t)
+{
+	tc_printf(t, "Attached in protected mode, please issue 'monitor erase_mass' to regain chip access\n");
+	t->attach = cortexm_attach;
+	return true;
 }
 
 /** Write one option word.  The address is the physical address of the

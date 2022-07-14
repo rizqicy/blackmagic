@@ -128,7 +128,7 @@ static bool stm32lx_nvm_data_erase(target_flash_s *f, target_addr_t addr, size_t
 static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t destination, const void *source, size_t size);
 
 static bool stm32lx_protected_attach(target *t);
-static bool stm32lx_mass_erase(target *t);
+static bool stm32lx_protected_mass_erase(target *t);
 
 static bool stm32lx_cmd_option(target *t, int argc, char **argv);
 static bool stm32lx_cmd_eeprom(target *t, int argc, char **argv);
@@ -267,7 +267,6 @@ bool stm32l0_probe(target *t)
 		return false;
 	}
 
-	t->mass_erase = stm32lx_mass_erase;
 	stm32l_priv_t *priv_storage = calloc(1, sizeof(*priv_storage));
 	if (!priv_storage) {
 		DEBUG_WARN("calloc: failed in %s\n", __func__);
@@ -281,8 +280,10 @@ bool stm32l0_probe(target *t)
 	sprintf(priv_storage->stm32l_variant, "%s%s", t->driver, protected ? " (protected)" : "");
 	t->driver = priv_storage->stm32l_variant;
 
-	if (protected)
+	if (protected) {
 		t->attach = stm32lx_protected_attach;
+		t->mass_erase = stm32lx_protected_mass_erase;
+	}
 
 	return true;
 }
@@ -482,7 +483,7 @@ static bool stm32lx_protected_attach(target *t)
 	return true;
 }
 
-static bool stm32lx_mass_erase(target *t)
+static bool stm32lx_protected_mass_erase(target *t)
 {
 	const uint32_t nvm = stm32lx_nvm_phys(t);
 	if (!stm32lx_nvm_opt_unlock(t, nvm))
@@ -500,6 +501,8 @@ static bool stm32lx_mass_erase(target *t)
 		target_print_progress(&timeout);
 	}
 
+	/* Disable further programming by locking PECR */
+	stm32lx_nvm_lock(t, nvm);
 	return true;
 }
 

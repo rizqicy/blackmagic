@@ -100,12 +100,12 @@
 #define STM32Lx_NVM_OPT_PHYS    0x1ff80000UL
 #define STM32Lx_NVM_EEPROM_PHYS 0x08080000UL
 
-#define STM32Lx_NVM_PEKEY1  (0x89abcdefUL)
-#define STM32Lx_NVM_PEKEY2  (0x02030405UL)
-#define STM32Lx_NVM_PRGKEY1 (0x8c9daebfUL)
-#define STM32Lx_NVM_PRGKEY2 (0x13141516UL)
-#define STM32Lx_NVM_OPTKEY1 (0xfbead9c8UL)
-#define STM32Lx_NVM_OPTKEY2 (0x24252627UL)
+#define STM32Lx_NVM_PEKEY1  UINT32_C(0x89abcdef)
+#define STM32Lx_NVM_PEKEY2  UINT32_C(0x02030405)
+#define STM32Lx_NVM_PRGKEY1 UINT32_C(0x8c9daebf)
+#define STM32Lx_NVM_PRGKEY2 UINT32_C(0x13141516)
+#define STM32Lx_NVM_OPTKEY1 UINT32_C(0xfbead9c8)
+#define STM32Lx_NVM_OPTKEY2 UINT32_C(0x24252627)
 
 #define STM32Lx_NVM_PECR_OBL_LAUNCH (1U << 18U)
 #define STM32Lx_NVM_PECR_ERRIE      (1U << 17U)
@@ -251,9 +251,7 @@ static void stm32l_add_eeprom(target *t, uint32_t addr, size_t length)
 	target_add_flash(t, f);
 }
 
-/** Query MCU memory for an indication as to whether or not the
-    currently attached target is served by this module.  We detect the
-    STM32L0xx parts as well as the STM32L1xx's. */
+/* Probe for STM32L0xx and STM32L1xx parts. */
 bool stm32l0_probe(target *t)
 {
 	switch (t->part_id) {
@@ -599,16 +597,12 @@ static bool stm32lx_cmd_option(target *t, int argc, char **argv)
 
 usage:
 	tc_printf(t, "usage: monitor option [ARGS]\n");
-	tc_printf(t, "  show                   - Show options in NVM and as"
-				 " loaded\n");
+	tc_printf(t, "  show                   - Show options in NVM and as loaded\n");
 	tc_printf(t, "  obl_launch             - Reload options from NVM\n");
-	tc_printf(t, "  write <addr> <value16> - Set option half-word; "
-				 "complement computed\n");
+	tc_printf(t, "  write <addr> <value16> - Set option half-word; complement computed\n");
 	tc_printf(t, "  raw <addr> <value32>   - Set option word\n");
-	tc_printf(t,
-		"The value of <addr> must be word aligned and from 0x%08x "
-		"to +0x%x\n",
-		STM32Lx_NVM_OPT_PHYS, STM32Lx_NVM_OPT_PHYS + opt_size - sizeof(uint32_t));
+	tc_printf(t, "The value of <addr> must be word aligned and from 0x%08x to +0x%x\n", STM32Lx_NVM_OPT_PHYS,
+		STM32Lx_NVM_OPT_PHYS + opt_size - sizeof(uint32_t));
 
 done:
 	stm32lx_nvm_lock(t, nvm);

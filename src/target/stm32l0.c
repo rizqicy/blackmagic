@@ -344,8 +344,8 @@ static bool stm32lx_nvm_busy_wait(target *t, uint32_t nvm)
 static bool stm32lx_nvm_prog_erase(target_flash_s *f, target_addr_t addr, size_t len)
 {
 	target *t = f->t;
-	const size_t page_size = f->blocksize;
 	const uint32_t nvm = stm32lx_nvm_phys(t);
+	const bool full_erase = addr == f->start && len == f->length;
 
 	if (!stm32lx_nvm_prog_data_unlock(t, nvm))
 		return false;
@@ -361,6 +361,9 @@ static bool stm32lx_nvm_prog_erase(target_flash_s *f, target_addr_t addr, size_t
 	   block to complete the last operation. */
 	target_mem_write32(t, STM32Lx_NVM_SR(nvm), STM32Lx_NVM_SR_ERR_M);
 
+	const size_t page_size = f->blocksize;
+	platform_timeout timeout;
+	platform_timeout_set(&timeout, 500);
 	while (len > 0) {
 		/* Write first word of page to 0 */
 		target_mem_write32(t, addr, 0);
@@ -369,6 +372,8 @@ static bool stm32lx_nvm_prog_erase(target_flash_s *f, target_addr_t addr, size_t
 		else
 			len = 0;
 		addr += page_size;
+		if (full_erase)
+			target_print_progress(&timeout);
 	}
 
 	/* Disable further programming by locking PECR */

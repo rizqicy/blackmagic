@@ -129,6 +129,7 @@ static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t destination,
 
 static bool stm32lx_protected_attach(target *t);
 static bool stm32lx_protected_mass_erase(target *t);
+static bool stm32lx_mass_erase(target *t);
 
 static bool stm32lx_cmd_option(target *t, int argc, char **argv);
 static bool stm32lx_cmd_eeprom(target *t, int argc, char **argv);
@@ -283,7 +284,8 @@ bool stm32l0_probe(target *t)
 	if (protected) {
 		t->attach = stm32lx_protected_attach;
 		t->mass_erase = stm32lx_protected_mass_erase;
-	}
+	} else
+		t->mass_erase = stm32lx_mass_erase;
 
 	return true;
 }
@@ -503,6 +505,16 @@ static bool stm32lx_protected_mass_erase(target *t)
 
 	/* Disable further programming by locking PECR */
 	stm32lx_nvm_lock(t, nvm);
+	return true;
+}
+
+static bool stm32lx_mass_erase(target *t)
+{
+	for (struct target_flash *flash = t->flash; flash; flash = flash->next) {
+		const int result = stm32lx_nvm_prog_erase(flash, flash->start, flash->length);
+		if (result != 0)
+			return false;
+	}
 	return true;
 }
 

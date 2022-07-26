@@ -596,33 +596,34 @@ static bool stm32lx_cmd_option(target *t, int argc, char **argv)
 
 	if (argc < 2)
 		goto usage;
-	size_t cb = strlen(argv[1]);
 
-	if (argc == 2 && !strncasecmp(argv[1], "obl_launch", cb)) {
+	if (argc == 2 && !strcasecmp(argv[1], "obl_launch"))
 		target_mem_write32(t, STM32Lx_NVM_PECR(nvm), STM32Lx_NVM_PECR_OBL_LAUNCH);
-	} else if (argc == 4 && !strncasecmp(argv[1], "raw", cb)) {
-		uint32_t addr = strtoul(argv[2], NULL, 0);
-		uint32_t val = strtoul(argv[3], NULL, 0);
-		tc_printf(t, "raw %08x <- %08x\n", addr, val);
-		if (addr < STM32Lx_NVM_OPT_PHYS || addr >= STM32Lx_NVM_OPT_PHYS + opt_size || (addr & 3))
+	else if (argc == 4) {
+		bool raw_write = false;
+		if (strcasecmp(argv[1], "raw") == 0)
+			raw_write = true;
+		else if (strcasecmp(argv[1], "write") != 0)
 			goto usage;
-		if (!stm32lx_option_write(t, addr, val))
-			tc_printf(t, "option write failed\n");
-	} else if (argc == 4 && !strncasecmp(argv[1], "write", cb)) {
-		uint32_t addr = strtoul(argv[2], NULL, 0);
+
+		const uint32_t addr = strtoul(argv[2], NULL, 0);
 		uint32_t val = strtoul(argv[3], NULL, 0);
-		val = (val & 0xffff) | ((~val & 0xffff) << 16);
-		tc_printf(t, "write %08x <- %08x\n", addr, val);
-		if (addr < STM32Lx_NVM_OPT_PHYS || addr >= STM32Lx_NVM_OPT_PHYS + opt_size || (addr & 3))
+		if (!raw_write)
+			val = (val & 0xffffU) | ((~val & 0xffffU) << 16U);
+		tc_printf(t, "%s %08x <- %08x\n", argv[1], addr, val);
+
+		if (addr >= STM32Lx_NVM_OPT_PHYS && addr < STM32Lx_NVM_OPT_PHYS + opt_size && (addr & 3) == 0) {
+			if (!stm32lx_option_write(t, addr, val))
+				tc_printf(t, "option write failed\n");
+		}
+		else
 			goto usage;
-		if (!stm32lx_option_write(t, addr, val))
-			tc_printf(t, "option write failed\n");
 	}
 
 	/* Report the current option values */
-	for (unsigned i = 0; i < opt_size; i += sizeof(uint32_t)) {
-		uint32_t addr = STM32Lx_NVM_OPT_PHYS + i;
-		uint32_t val = target_mem_read32(t, addr);
+	for (size_t i = 0; i < opt_size; i += 4U) {
+		const uint32_t addr = STM32Lx_NVM_OPT_PHYS + i;
+		const uint32_t val = target_mem_read32(t, addr);
 		tc_printf(t, "0x%08x: 0x%04x 0x%04x %s\n", addr, val & 0xffff, (val >> 16) & 0xffff,
 			((val & 0xffff) == ((~val >> 16) & 0xffff)) ? "OK" : "ERR");
 	}
@@ -654,8 +655,8 @@ usage:
 	tc_printf(t, "  obl_launch             - Reload options from NVM\n");
 	tc_printf(t, "  write <addr> <value16> - Set option half-word; complement computed\n");
 	tc_printf(t, "  raw <addr> <value32>   - Set option word\n");
-	tc_printf(t, "The value of <addr> must be word aligned and from 0x%08x to +0x%x\n", STM32Lx_NVM_OPT_PHYS,
-		STM32Lx_NVM_OPT_PHYS + opt_size - sizeof(uint32_t));
+	tc_printf(t, "The value of <addr> must be 32-bit aligned and from 0x%08x to +0x%x\n", STM32Lx_NVM_OPT_PHYS,
+		STM32Lx_NVM_OPT_PHYS + opt_size - 4);
 
 done:
 	stm32lx_nvm_lock(t, nvm);

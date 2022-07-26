@@ -290,18 +290,19 @@ bool stm32l0_probe(target *t)
 	return true;
 }
 
-/** Lock the NVM control registers preventing writes or erases. */
+/* Lock the NVM control registers preventing writes or erases. */
 static void stm32lx_nvm_lock(target *t, uint32_t nvm)
 {
 	target_mem_write32(t, STM32Lx_NVM_PECR(nvm), STM32Lx_NVM_PECR_PELOCK);
 }
 
-/** Unlock the NVM control registers for modifying program or
-    data flash.  Returns true if the unlock succeeds. */
+/*
+ * Unlock the NVM control registers for modifying program or data flash.
+ * Returns true if the unlock succeeds.
+ */
 static bool stm32lx_nvm_prog_data_unlock(target *t, uint32_t nvm)
 {
-	/* Always lock first because that's the only way to know that the
-           unlock can succeed on the STM32L0's. */
+	/* Always lock first because that's the only way to know that the unlock can succeed on the STM32L0's. */
 	target_mem_write32(t, STM32Lx_NVM_PECR(nvm), STM32Lx_NVM_PECR_PELOCK);
 	target_mem_write32(t, STM32Lx_NVM_PEKEYR(nvm), STM32Lx_NVM_PEKEY1);
 	target_mem_write32(t, STM32Lx_NVM_PEKEYR(nvm), STM32Lx_NVM_PEKEY2);
@@ -311,12 +312,13 @@ static bool stm32lx_nvm_prog_data_unlock(target *t, uint32_t nvm)
 	return !(target_mem_read32(t, STM32Lx_NVM_PECR(nvm)) & STM32Lx_NVM_PECR_PRGLOCK);
 }
 
-/** Unlock the NVM control registers for modifying option bytes.
-    Returns true if the unlock succeeds. */
+/*
+ * Unlock the NVM control registers for modifying option bytes.
+ * Returns true if the unlock succeeds.
+ */
 static bool stm32lx_nvm_opt_unlock(target *t, uint32_t nvm)
 {
-	/* Always lock first because that's the only way to know that the
-           unlock can succeed on the STM32L0's. */
+	/* Always lock first because that's the only way to know that the unlock can succeed on the STM32L0's. */
 	target_mem_write32(t, STM32Lx_NVM_PECR(nvm), STM32Lx_NVM_PECR_PELOCK);
 	target_mem_write32(t, STM32Lx_NVM_PEKEYR(nvm), STM32Lx_NVM_PEKEY1);
 	target_mem_write32(t, STM32Lx_NVM_PEKEYR(nvm), STM32Lx_NVM_PEKEY2);
@@ -339,10 +341,12 @@ static bool stm32lx_nvm_busy_wait(target *t, uint32_t nvm, platform_timeout *tim
 	return (!((sr & STM32Lx_NVM_SR_ERR_M) || !(sr & STM32Lx_NVM_SR_EOP)));
 }
 
-/** Erase a region of program flash using operations through the debug
-    interface.  This is slower than stubbed versions(see NOTES).  The
-    flash array is erased for all pages from addr to addr+len
-    inclusive.  NVM register file address chosen from target. */
+/*
+ * Erase a region of program flash using operations through the debug interface.
+ * This is slower than stubbed versions (see NOTES).
+ * The flash array is erased for all pages from addr to addr + length inclusive.
+ * The NVM register base is automatically determined based on the target.
+ */
 static bool stm32lx_nvm_prog_erase(target_flash_s *f, const target_addr_t addr, const size_t length)
 {
 	target *t = f->t;
@@ -380,8 +384,7 @@ static bool stm32lx_nvm_prog_erase(target_flash_s *f, const target_addr_t addr, 
 	return stm32lx_nvm_busy_wait(t, nvm, full_erase ? &timeout : NULL);
 }
 
-/** Write to program flash using operations through the debug
-    interface. */
+/* Write to program flash using operations through the debug interface. */
 static bool stm32lx_nvm_prog_write(target_flash_s *f, target_addr_t dest, const void *src, size_t length)
 {
 	target *t = f->t;
@@ -390,8 +393,7 @@ static bool stm32lx_nvm_prog_write(target_flash_s *f, target_addr_t dest, const 
 	if (!stm32lx_nvm_prog_data_unlock(t, nvm))
 		return false;
 
-	/* Wait for BSY to clear because we cannot write the PECR until
-	   the previous operation completes on STM32Lxxx. */
+	/* Wait for BSY to clear because we cannot write the PECR until the previous operation completes */
 	if (!stm32lx_nvm_busy_wait(t, nvm, NULL))
 		return false;
 
@@ -405,10 +407,11 @@ static bool stm32lx_nvm_prog_write(target_flash_s *f, target_addr_t dest, const 
 	return stm32lx_nvm_busy_wait(t, nvm, NULL);
 }
 
-/** Erase a region of data flash using operations through the debug
-    interface .  The flash is erased for all pages from addr to
-    addr+len, inclusive, on a word boundary.  NVM register file
-    address chosen from target. */
+/*
+ * Erase a region of data flash using operations through the debug interface.
+ * The flash is erased for all pages from addr to addr + length, inclusive, on a word boundary.
+ * The NVM register base is automatically determined based on the target.
+ */
 static bool stm32lx_nvm_data_erase(target_flash_s *f, const target_addr_t addr, const size_t length)
 {
 	target *t = f->t;
@@ -437,10 +440,11 @@ static bool stm32lx_nvm_data_erase(target_flash_s *f, const target_addr_t addr, 
 	return stm32lx_nvm_busy_wait(t, nvm, NULL);
 }
 
-/** Write to data flash using operations through the debug interface.
-    NVM register file address chosen from target.  Unaligned
-    destination writes are supported (though unaligned sources are
-    not). */
+/*
+ * Write to data flash using operations through the debug interface.
+ * The NVM register base is automatically determined based on the target.
+ * Unaligned destination writes are supported (though unaligned sources are not).
+ */
 static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t dest, const void *src, const size_t length)
 {
 	target *t = f->t;

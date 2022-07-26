@@ -125,7 +125,7 @@ static bool stm32lx_nvm_prog_erase(target_flash_s *f, target_addr_t addr, size_t
 static bool stm32lx_nvm_prog_write(target_flash_s *f, target_addr_t destination, const void *src, size_t size);
 
 static bool stm32lx_nvm_data_erase(target_flash_s *f, target_addr_t addr, size_t len);
-static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t destination, const void *source, size_t size);
+static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t dest, const void *src, size_t size);
 
 static bool stm32lx_protected_attach(target *t);
 static bool stm32lx_protected_mass_erase(target *t);
@@ -441,23 +441,20 @@ static bool stm32lx_nvm_data_erase(target_flash_s *f, const target_addr_t addr, 
     NVM register file address chosen from target.  Unaligned
     destination writes are supported (though unaligned sources are
     not). */
-static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t destination, const void *src, size_t size)
+static bool stm32lx_nvm_data_write(target_flash_s *f, target_addr_t dest, const void *src, const size_t size)
 {
 	target *t = f->t;
 	const uint32_t nvm = stm32lx_nvm_phys(t);
 	const bool is_stm32l1 = stm32lx_is_stm32l1(t);
-	uint32_t *source = (uint32_t *)src;
 
 	if (!stm32lx_nvm_prog_data_unlock(t, nvm))
 		return false;
 
 	target_mem_write32(t, STM32Lx_NVM_PECR(nvm), is_stm32l1 ? 0 : STM32Lx_NVM_PECR_DATA);
 
-	while (size) {
-		size -= 4;
-		uint32_t v = *source++;
-		target_mem_write32(t, destination, v);
-		destination += 4;
+	const uint32_t *const buffer = src;
+	for (size_t offset = 0; offset < size; offset += 4) {
+		target_mem_write32(t, dest + offset, buffer[offset]);
 
 		if (target_check_error(t))
 			return false;

@@ -255,6 +255,43 @@ void aux_serial_set_encoding(const usb_cdc_line_coding_s *coding)
 	}
 }
 
+void aux_serial_get_encoding(usb_cdc_line_coding_s *coding)
+{
+	coding->dwDTERate = aux_serial_active_baud_rate;
+
+	switch (usart_get_stopbits(USBUSART)) {
+	case USART_STOPBITS_1:
+		coding->bCharFormat = USB_CDC_1_STOP_BITS;
+		break;
+	case USART_STOPBITS_1_5:
+		coding->bCharFormat = USB_CDC_1_5_STOP_BITS;
+		break;
+	case USART_STOPBITS_2:
+	default:
+		coding->bCharFormat = USB_CDC_2_STOP_BITS;
+		break;
+	}
+
+	switch (usart_get_parity(USBUSART)) {
+	case USART_PARITY_NONE:
+	default:
+		coding->bParityType = USB_CDC_NO_PARITY;
+		break;
+	case USART_PARITY_ODD:
+		coding->bParityType = USB_CDC_ODD_PARITY;
+		break;
+	case USART_PARITY_EVEN:
+		coding->bParityType = USB_CDC_EVEN_PARITY;
+		break;
+	}
+
+	const uint32_t data_bits = usart_get_databits(USBUSART);
+	if (coding->bParityType == USB_CDC_NO_PARITY)
+		coding->bDataBits = data_bits;
+	else
+		coding->bDataBits = data_bits - 1;
+}
+
 #if defined(STM32F0) || defined(STM32F1) || defined(STM32F3) || defined(STM32F4)
 void aux_serial_set_led(const aux_serial_led_e led)
 {

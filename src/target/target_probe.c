@@ -26,10 +26,11 @@
 #define DO_PRAGMA_(x) _Pragma(#x)
 #define DO_PRAGMA(x)  DO_PRAGMA_(x)
 // __attribute__((alias)) is not supported in AppleClang.
-#define weak_alias(name, aliasname)  DO_PRAGMA(weak name = aliasname)
-#define CORTEXA_PROBE_WEAK_NOP(name) weak_alias(name, cortexa_probe_nop)
-#define CORTEXM_PROBE_WEAK_NOP(name) weak_alias(name, cortexm_probe_nop)
-#define TARGET_PROBE_WEAK_NOP(name)  weak_alias(name, target_probe_nop)
+#define weak_alias(name, aliasname)     DO_PRAGMA(weak name = aliasname)
+#define CORTEXA_PROBE_WEAK_NOP(name)    weak_alias(name, cortexa_probe_nop)
+#define CORTEXM_PROBE_WEAK_NOP(name)    weak_alias(name, cortexm_probe_nop)
+#define TARGET_PROBE_WEAK_NOP(name)     weak_alias(name, target_probe_nop)
+#define LPC55_DP_PREPARE_WEAK_NOP(name) weak_alias(name, lpc55_dp_prepare_nop)
 #else
 #define APPLE_STATIC static inline
 #define CORTEXA_PROBE_WEAK_NOP(name) \
@@ -37,6 +38,8 @@
 #define CORTEXM_PROBE_WEAK_NOP(name) \
 	extern bool name(adiv5_access_port_s *) __attribute__((weak, alias("cortexm_probe_nop")));
 #define TARGET_PROBE_WEAK_NOP(name) extern bool name(target_s *) __attribute__((weak, alias("target_probe_nop")));
+#define LPC55_DP_PREPARE_WEAK_NOP(name) \
+	extern void name(adiv5_debug_port_s *) __attribute__((weak, alias("lpc55_dp_prepare_nop")));
 #endif
 
 APPLE_STATIC bool cortexa_probe_nop(adiv5_access_port_s *apb, uint32_t debug_base)
@@ -58,6 +61,11 @@ APPLE_STATIC bool target_probe_nop(target_s *t)
 	return false;
 }
 
+APPLE_STATIC void lpc55_dp_prepare_nop(ADIv5_DP_t *dp)
+{
+	(void)dp;
+}
+
 /*
  * nop alias functions to allow support for target probe methods
  * to be disabled by not compiling/linking them in.
@@ -71,6 +79,7 @@ CORTEXM_PROBE_WEAK_NOP(kinetis_mdm_probe)
 CORTEXM_PROBE_WEAK_NOP(nrf51_mdm_probe)
 CORTEXM_PROBE_WEAK_NOP(efm32_aap_probe)
 CORTEXM_PROBE_WEAK_NOP(rp_rescue_probe)
+CORTEXM_PROBE_WEAK_NOP(lpc55_dmap_probe)
 
 TARGET_PROBE_WEAK_NOP(ch32f1_probe)
 TARGET_PROBE_WEAK_NOP(gd32f1_probe)
@@ -88,6 +97,7 @@ TARGET_PROBE_WEAK_NOP(lpc15xx_probe)
 TARGET_PROBE_WEAK_NOP(lpc17xx_probe)
 TARGET_PROBE_WEAK_NOP(lpc43xx_probe)
 TARGET_PROBE_WEAK_NOP(lpc546xx_probe)
+TARGET_PROBE_WEAK_NOP(lpc55xx_probe)
 TARGET_PROBE_WEAK_NOP(samx7x_probe)
 TARGET_PROBE_WEAK_NOP(sam3x_probe)
 TARGET_PROBE_WEAK_NOP(sam4l_probe)
@@ -100,3 +110,5 @@ TARGET_PROBE_WEAK_NOP(msp432_probe)
 TARGET_PROBE_WEAK_NOP(ke04_probe)
 TARGET_PROBE_WEAK_NOP(rp_probe)
 TARGET_PROBE_WEAK_NOP(renesas_probe)
+
+LPC55_DP_PREPARE_WEAK_NOP(lpc55_dp_prepare)

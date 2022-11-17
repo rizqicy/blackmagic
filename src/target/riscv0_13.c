@@ -37,6 +37,7 @@
 #include "exception.h"
 #include "target.h"
 #include "target_internal.h"
+#include "target_probe.h"
 
 #include "riscv.h"
 #include "rv32i_isa.h"

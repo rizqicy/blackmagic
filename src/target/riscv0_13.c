@@ -1416,7 +1416,7 @@ static enum target_halt_reason rvdbg_halt_poll(target *t, target_addr *watch)
 	uint32_t dcsr;
 	res = rvdbg_read_single_reg(dmi, HART_REG_CSR_DCSR, &dcsr, AUTOEXEC_STATE_NONE);
 	uint8_t cause = CSR_DCSR_GET_CAUSE(dcsr);
-	if ((t->t_designer == 0x612) && (cause == 3 ) && (dcsr & CSR_DCSR_STEP)) {
+	if (t->designer_code == 0x612 && cause == 3 && (dcsr & CSR_DCSR_STEP)) {
 		/* FIXME: ESP32-C3 never reports TARGET_HALT_STEPPING */
 		DEBUG_INFO("Workaround for single stepping ESP32-C3\n");
 		cause = 4;
@@ -1852,7 +1852,7 @@ int rvdbg_dmi_init(RVDBGv013_DMI_t *dmi)
 	} else {
 		DEBUG_INFO("Machine %"PRIx32 ", %"PRIx32 ", %"PRIx32 ", %"PRIx32 "\n",
 				   machine[0], machine[1], machine[2], machine[3]);
-		t->t_designer = machine[0] & 0xffff;
+		t->designer_code = machine[0] & 0xffff;
 		t->cpuid =  machine[1];
 		switch (machine[0]) {
 		case 0x612:

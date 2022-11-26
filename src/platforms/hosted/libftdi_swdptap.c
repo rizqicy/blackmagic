@@ -274,10 +274,8 @@ void swdptap_bit_out(bool val)
 	}
 }
 
-bool swdptap_seq_in_parity(uint32_t *res, size_t clock_cycles)
+static bool swdptap_seq_in_parity_(uint32_t *res, size_t clock_cycles)
 {
-	assert(clock_cycles == 32);
-	swdptap_turnaround(SWDIO_STATUS_FLOAT);
 	unsigned int parity = 0;
 	unsigned int result = 0;
 	if (do_mpsse) {
@@ -311,6 +309,14 @@ bool swdptap_seq_in_parity(uint32_t *res, size_t clock_cycles)
 	}
 	*res = result;
 	return parity;
+}
+
+static bool swdptap_seq_in_parity(uint32_t *const result, const size_t clock_cycles)
+{
+	if (clock_cycles > 32U)
+		return false;
+	swdptap_turnaround(SWDIO_STATUS_FLOAT);
+	return swdptap_seq_in_parity_(result, clock_cycles);
 }
 
 static uint32_t swdptap_seq_in_mpsse(const size_t clock_cycles)

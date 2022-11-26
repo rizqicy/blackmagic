@@ -285,24 +285,23 @@ static bool swdptap_seq_in_parity_mpsse(uint32_t *const result, const size_t clo
 	return parity;
 }
 
-static bool swdptap_seq_in_parity_raw(uint32_t *const result, size_t clock_cycles)
+static bool swdptap_seq_in_parity_raw(uint32_t *const result, const size_t clock_cycles)
 {
-	size_t index = clock_cycles + 1;
-	uint8_t cmd[4];
+	const uint8_t cmd[4] = {
+		active_cable.bb_swdio_in_port_cmd,
+		MPSSE_TMS_SHIFT,
+		0,
+		0,
+	};
+	for (size_t clock_cycle = 0; clock_cycle <= clock_cycles; ++clock_cycle)
+		libftdi_buffer_write_arr(cmd);
 
-	cmd[0] = active_cable.bb_swdio_in_port_cmd;
-	cmd[1] = MPSSE_TMS_SHIFT;
-	cmd[2] = 0;
-	cmd[3] = 0;
-	while (index--) {
-		libftdi_buffer_write(cmd, sizeof(cmd));
-	}
 	uint8_t raw_data[33];
 	libftdi_buffer_read(raw_data, clock_cycles + 1);
 	uint32_t parity = 0;
 	if (raw_data[clock_cycles] & active_cable.bb_swdio_in_pin)
 		parity ^= 1;
-	index = clock_cycles;
+	size_t index = clock_cycles;
 	uint32_t data = 0;
 	while (index--) {
 		if (raw_data[index] & active_cable.bb_swdio_in_pin) {

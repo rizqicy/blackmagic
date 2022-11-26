@@ -276,11 +276,11 @@ void swdptap_bit_out(bool val)
 
 static bool swdptap_seq_in_parity_mpsse(uint32_t *const result, const size_t clock_cycles)
 {
-	uint8_t DO[5];
-	libftdi_jtagtap_tdi_tdo_seq(DO, 0, NULL, clock_cycles + 1);
-	uint32_t data = DO[0] + (DO[1] << 8) + (DO[2] << 16) + (DO[3] << 24);
-	uint32_t parity = __builtin_parity(data & ((1LL << clock_cycles) - 1)) & 1;
-	parity ^= DO[4] & 1;
+	uint8_t data_out[5];
+	libftdi_jtagtap_tdi_tdo_seq(data_out, false, NULL, clock_cycles + 1U);
+	const uint32_t data = data_out[0] + (data_out[1] << 8U) + (data_out[2] << 16U) + (data_out[3] << 24U);
+	uint8_t parity = __builtin_parity(data & ((1U << clock_cycles) - 1U)) & 1U;
+	parity ^= data_out[4] & 1U;
 	*result = data;
 	return parity;
 }

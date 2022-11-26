@@ -297,16 +297,14 @@ static bool swdptap_seq_in_parity_raw(uint32_t *const result, const size_t clock
 		libftdi_buffer_write_arr(cmd);
 
 	uint8_t raw_data[33];
-	libftdi_buffer_read(raw_data, clock_cycles + 1);
-	uint32_t parity = 0;
-	if (raw_data[clock_cycles] & active_cable.bb_swdio_in_pin)
-		parity ^= 1;
-	size_t index = clock_cycles;
+	libftdi_buffer_read(raw_data, clock_cycles + 1U);
+	uint8_t parity = (raw_data[clock_cycles] & active_cable.bb_swdio_in_pin) ? 1U : 0U;
+
 	uint32_t data = 0;
-	while (index--) {
-		if (raw_data[index] & active_cable.bb_swdio_in_pin) {
-			parity ^= 1;
-			data |= (1 << index);
+	for (size_t clock_cycle = 0; clock_cycle < clock_cycles; ++clock_cycle) {
+		if (raw_data[clock_cycle] & active_cable.bb_swdio_in_pin) {
+			parity ^= 1U;
+			data |= 1U << clock_cycle;
 		}
 	}
 	*result = data;

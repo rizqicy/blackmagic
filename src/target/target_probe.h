@@ -66,4 +66,6 @@ bool ke04_probe(target_s *t);
 bool rp_probe(target_s *t);
 bool renesas_probe(target_s *t);
 
+bool atxmega_probe(target_s *t);
+
 #endif /* TARGET_TARGET_PROBE_H */

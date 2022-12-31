@@ -139,6 +139,11 @@ static bool avr_pdi_init(avr_pdi_s *const pdi)
 
 #undef PROBE
 
+avr_pdi_s *avr_pdi_struct(target_s *const target)
+{
+	return target->priv;
+}
+
 /*
  * This is a PDI-specific DR manipulation function that handles PDI_DELAY responses
  * transparently to the caller. It also does parity validation, returning true for

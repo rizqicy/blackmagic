@@ -22,6 +22,7 @@
 #include "general.h"
 #include "jtag_scan.h"
 #include "adiv5.h"
+#include "avr_pdi.h"
 #include "jtag_devs.h"
 
 const jtag_dev_descr_s dev_descr[] = {
@@ -115,6 +116,12 @@ const jtag_dev_descr_s dev_descr[] = {
 		.idcode = 0x000007a3U,
 		.idmask = 0x00000fffU,
 		.descr = "Gigadevice BSD.",
+	},
+	{
+		.idcode = 0x0000003fU,
+		.idmask = 0x00000fffU,
+		.descr = "AVR JTAG-PDI port.",
+		.handler = avr_jtag_pdi_handler,
 	},
 	/* Just for fun, unsupported */
 	{

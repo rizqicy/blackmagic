@@ -75,6 +75,8 @@ static const uint8_t pdi_key_nvm[] = {0xff, 0x88, 0xd8, 0xcd, 0x45, 0xab, 0x89, 
 static const uint8_t pdi_key_debug[] = {0x21, 0x81, 0x7c, 0x9f, 0xd4, 0x2d, 0x21, 0x3a};
 
 static bool avr_pdi_init(avr_pdi_s *pdi);
+static bool avr_attach(target_s *target);
+static void avr_detach(target_s *target);
 static void avr_reset(target_s *target);
 static void avr_halt_request(target_s *target);
 
@@ -122,6 +124,9 @@ static bool avr_pdi_init(avr_pdi_s *const pdi)
 	target->core = "AVR";
 	target->priv = pdi;
 	target->priv_free = free;
+
+	target->attach = avr_attach;
+	target->detach = avr_detach;
 
 	target->reset = avr_reset;
 	target->halt_request = avr_halt_request;
@@ -274,6 +279,32 @@ static bool avr_ensure_nvm_idle(const avr_pdi_s *const pdi)
 	if (pdi->ensure_nvm_idle)
 		return pdi->ensure_nvm_idle(pdi);
 	return true;
+}
+
+static bool avr_attach(target_s *const target)
+{
+	const avr_pdi_s *const pdi = target->priv;
+	volatile exception_s e;
+	jtag_dev_write_ir(pdi->dev_index, IR_PDI);
+
+	TRY_CATCH (e, EXCEPTION_ALL) {
+		target_reset(target);
+		if (!avr_enable(pdi, PDI_DEBUG))
+			return false;
+		target_halt_request(target);
+		if (!avr_enable(pdi, PDI_NVM) || !avr_ensure_nvm_idle(pdi) || avr_pdi_reg_read(pdi, PDI_REG_R3) != 0x04U)
+			return false;
+	}
+	return !e.type;
+}
+
+static void avr_detach(target_s *const target)
+{
+	const avr_pdi_s *const pdi = target->priv;
+
+	avr_disable(pdi, PDI_NVM);
+	avr_disable(pdi, PDI_DEBUG);
+	jtag_dev_write_ir(pdi->dev_index, IR_BYPASS);
 }
 
 static void avr_reset(target_s *const target)

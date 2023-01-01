@@ -82,8 +82,10 @@ static const uint8_t pdi_key_debug[] = {0x21, 0x81, 0x7c, 0x9f, 0xd4, 0x2d, 0x21
 static bool avr_pdi_init(avr_pdi_s *pdi);
 static bool avr_attach(target_s *target);
 static void avr_detach(target_s *target);
+
 static void avr_reset(target_s *target);
 static void avr_halt_request(target_s *target);
+static target_halt_reason_e avr_halt_poll(target_s *target, target_addr_t *watch);
 
 void avr_jtag_pdi_handler(const uint8_t dev_index)
 {
@@ -135,6 +137,7 @@ static bool avr_pdi_init(avr_pdi_s *const pdi)
 
 	target->reset = avr_reset;
 	target->halt_request = avr_halt_request;
+	target->halt_poll = avr_halt_poll;
 
 	/* Try probing for various known AVR parts */
 	PROBE(atxmega_probe);
@@ -435,3 +438,15 @@ static void avr_halt_request(target_s *const target)
 		raise_exception(EXCEPTION_ERROR, "Error halting device, device in incorrect state");
 	pdi->halt_reason = TARGET_HALT_REQUEST;
 }
+
+static target_halt_reason_e avr_halt_poll(target_s *const target, target_addr_t *const watch)
+{
+	avr_pdi_s *const pdi = target->priv;
+	(void)watch;
+
+	/* If we're running but the processor stops because it's hit a breakpoint, update */
+	if (pdi->halt_reason == TARGET_HALT_RUNNING && avr_pdi_reg_read(pdi, PDI_REG_R3) == 0x04U)
+		pdi->halt_reason = TARGET_HALT_BREAKPOINT;
+	return pdi->halt_reason;
+}
+

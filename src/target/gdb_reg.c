@@ -20,13 +20,13 @@
 
 #include "gdb_reg.h"
 
-const char *gdb_arm_preamble_first = "<?xml version=\"1.0\"?>"
+const char *gdb_xml_preamble_first = "<?xml version=\"1.0\"?>"
 									 "<!DOCTYPE";
 
-const char *gdb_arm_preamble_second = "SYSTEM "
-									  "\"gdb-target.dtd\">"
+const char *gdb_xml_preamble_second = "SYSTEM \"gdb-target.dtd\">"
 									  "<target>"
-									  "  <architecture>arm</architecture>";
+									  "  <architecture>";
+const char *gdb_xml_preamble_third = "</architecture>";
 
 const char *gdb_reg_type_strings[] = {
 	"",                   // GDB_TYPE_UNSPECIFIED.

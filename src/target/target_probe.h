@@ -67,5 +67,6 @@ bool msp432_probe(target_s *t);
 bool ke04_probe(target_s *t);
 bool rp_probe(target_s *t);
 bool renesas_probe(target_s *t);
+bool imxrt_probe(target_s *target);
 
 #endif /* TARGET_TARGET_PROBE_H */

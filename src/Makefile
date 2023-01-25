@@ -16,7 +16,7 @@ CFLAGS += -Wall -Wextra -Werror -Wreturn-type \
 	-I. -Iinclude -I$(PLATFORM_DIR)
 
 ifeq (filter, macosx darwin, $(SYS))
-CFLAGS += -Wmaybe-uninitialized -Wstringop-overflow -Wunsafe-loop-optimizations 
+CFLAGS += -Wmaybe-uninitialized -Wstringop-overflow -Wunsafe-loop-optimizations
 endif
 
 ifeq ($(ENABLE_DEBUG), 1)
@@ -39,6 +39,7 @@ SRC =              \
 	gdb_packet.c   \
 	gdb_reg.c      \
 	hex_utils.c    \
+	imxrt.c        \
 	jtag_devs.c    \
 	jtag_scan.c    \
 	lmi.c          \

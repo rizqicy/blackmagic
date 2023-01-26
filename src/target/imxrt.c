@@ -110,12 +110,18 @@
 #define IMXRT_SPI_FLASH_DATA_IN          (0U << 17U)
 #define IMXRT_SPI_FLASH_DATA_OUT         (1U << 17U)
 
+#define SPI_FLASH_CMD_READ_STATUS                                                           \
+	(IMXRT_SPI_FLASH_OPCODE_ONLY | IMXRT_SPI_FLASH_DATA_IN | IMXRT_SPI_FLASH_DUMMY_LEN(0) | \
+		IMXRT_SPI_FLASH_OPCODE(0x05U))
 #define SPI_FLASH_CMD_READ_JEDEC_ID                                                         \
 	(IMXRT_SPI_FLASH_OPCODE_ONLY | IMXRT_SPI_FLASH_DATA_IN | IMXRT_SPI_FLASH_DUMMY_LEN(0) | \
 		IMXRT_SPI_FLASH_OPCODE(0x9fU))
 #define SPI_FLASH_CMD_READ_SFDP                                                                \
 	(IMXRT_SPI_FLASH_OPCODE_3B_ADDR | IMXRT_SPI_FLASH_DATA_IN | IMXRT_SPI_FLASH_DUMMY_LEN(8) | \
 		IMXRT_SPI_FLASH_OPCODE(0x5aU))
+
+#define SPI_FLASH_STATUS_BUSY          0x01U
+#define SPI_FLASH_STATUS_WRITE_ENABLED 0x02U
 
 typedef enum imxrt_boot_src {
 	boot_spi_flash_nor,
@@ -138,6 +144,8 @@ typedef struct imxrt_priv {
 
 static void imxrt_enter_flash_mode(target_s *target);
 static void imxrt_spi_read(target_s *target, uint32_t command, target_addr_t address, void *buffer, size_t length);
+static void imxrt_spi_write(
+	target_s *target, uint32_t command, target_addr_t address, const void *buffer, size_t length);
 static imxrt_boot_src_e imxrt_boot_source(uint32_t boot_cfg);
 
 static void imxrt_spi_read_sfdp(target_s *const target, const uint32_t address, void *const buffer, const size_t length)
@@ -305,13 +313,15 @@ static void imxrt_spi_configure_sequence(
 		IMXRT_FLEXSPI_LUT_OPCODE(IMXRT_FLEXSPI_LUT_OP_DUMMY_CYCLES) | IMXRT_FLEXSPI_LUT_MODE_SERIAL;
 	sequence[offset++].value = (command & IMXRT_SPI_FLASH_DUMMY_MASK) >> IMXRT_SPI_FLASH_DUMMY_SHIFT;
 	/* Now run the data phase based on the operation's data direction */
-	if (command & IMXRT_SPI_FLASH_DATA_OUT)
-		sequence[offset].opcode_mode =
-			IMXRT_FLEXSPI_LUT_OPCODE(IMXRT_FLEXSPI_LUT_OP_WRITE) | IMXRT_FLEXSPI_LUT_MODE_SERIAL;
-	else
-		sequence[offset].opcode_mode =
-			IMXRT_FLEXSPI_LUT_OPCODE(IMXRT_FLEXSPI_LUT_OP_READ) | IMXRT_FLEXSPI_LUT_MODE_SERIAL;
-	sequence[offset++].value = 0;
+	if (length) {
+		if (command & IMXRT_SPI_FLASH_DATA_OUT)
+			sequence[offset].opcode_mode =
+				IMXRT_FLEXSPI_LUT_OPCODE(IMXRT_FLEXSPI_LUT_OP_WRITE) | IMXRT_FLEXSPI_LUT_MODE_SERIAL;
+		else
+			sequence[offset].opcode_mode =
+				IMXRT_FLEXSPI_LUT_OPCODE(IMXRT_FLEXSPI_LUT_OP_READ) | IMXRT_FLEXSPI_LUT_MODE_SERIAL;
+		sequence[offset++].value = 0;
+	}
 	/* And finally tell the controller to deassert the chip select */
 	sequence[offset].opcode_mode = IMXRT_FLEXSPI_LUT_OPCODE(IMXRT_FLEXSPI_LUT_OP_STOP);
 	sequence[offset++].value = 0;
@@ -357,4 +367,32 @@ static void imxrt_spi_read(target_s *const target, const uint32_t command, const
 	target_mem_write32(target, IMXRT_FLEXSPI1_PRG_READ_FIFO_CTRL, IMXRT_FLEXSPI1_PRG_READ_FIFO_CTRL_CLR);
 	/* And restore the sequence LUT when we're done */
 	imxrt_spi_restore(target);
+}
+
+static void imxrt_spi_write(target_s *const target, const uint32_t command, const target_addr_t address,
+	const void *const buffer, const size_t length)
+{
+	/* Configure the programmable sequence LUT */
+	imxrt_spi_configure_sequence(target, command, address, length);
+	/* Transfer the data into the transmit FIFO ready */
+	if (length) {
+		uint32_t data[32] = {};
+		memcpy(data, buffer, length);
+		target_mem_write(target, IMXRT_FLEXSPI1_PRG_WRITE_FIFO, data, (length + 3U) & ~3U);
+	}
+	/* Execute the write and restore the sequence LUT when we're done */
+	imxrt_spi_wait_complete(target);
+	imxrt_spi_restore(target);
+}
+
+static inline uint8_t imxrt_spi_read_status(target_s *const target)
+{
+	uint8_t status = 0;
+	imxrt_spi_read(target, SPI_FLASH_CMD_READ_STATUS, 0, &status, sizeof(status));
+	return status;
+}
+
+static inline void imxrt_spi_run_command(target_s *const target, const uint32_t command)
+{
+	imxrt_spi_write(target, command, 0U, NULL, 0U);
 }

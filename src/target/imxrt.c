@@ -128,12 +128,11 @@
 #define SPI_FLASH_STATUS_WRITE_ENABLED 0x02U
 
 typedef enum imxrt_boot_src {
-	boot_spi_flash_nor,
+	BOOT_FLEX_SPI,
 	boot_sd_card,
 	boot_emmc,
 	boot_slc_nand,
 	boot_parallel_nor,
-	boot_spi_flash_nand,
 } imxrt_boot_src_e;
 
 typedef struct imxrt_flexspi_lut_insn {
@@ -212,8 +211,8 @@ bool imxrt_probe(target_s *const target)
 	DEBUG_INFO("i.MXRT boot config is %08" PRIx32 "\n", boot_cfg);
 	priv->boot_source = imxrt_boot_source(boot_cfg);
 	switch (priv->boot_source) {
-	case boot_spi_flash_nor:
-		DEBUG_INFO("-> booting from SPI Flash (NOR)\n");
+	case BOOT_FLEX_SPI:
+		DEBUG_INFO("-> booting from SPI Flash (FlexSPI)\n");
 		break;
 	case boot_sd_card:
 		DEBUG_INFO("-> booting from SD Card\n");
@@ -227,16 +226,13 @@ bool imxrt_probe(target_s *const target)
 	case boot_parallel_nor:
 		DEBUG_INFO("-> booting from parallel Flash (NOR) via SEMC\n");
 		break;
-	case boot_spi_flash_nand:
-		DEBUG_INFO("-> booting from SPI Flash (NAND)\n");
-		break;
 	}
 
 	/* Build the RAM map for the part */
 	target_add_ram(target, IMXRT_OCRAM1_BASE, IMXRT_OCRAM1_SIZE);
 	target_add_ram(target, IMXRT_OCRAM2_BASE, IMXRT_OCRAM2_SIZE);
 
-	if (priv->boot_source == boot_spi_flash_nor || priv->boot_source == boot_spi_flash_nand) {
+	if (priv->boot_source == BOOT_FLEX_SPI) {
 		/* Try to detect the Flash that should be attached */
 		imxrt_enter_flash_mode(target);
 		spi_flash_id_s flash_id;
@@ -270,7 +266,7 @@ static imxrt_boot_src_e imxrt_boot_source(const uint32_t boot_cfg)
 	 */
 	const uint8_t boot_src = boot_cfg & 0xf0U;
 	if (boot_src == 0x00U)
-		return boot_spi_flash_nor;
+		return BOOT_FLEX_SPI;
 	if ((boot_src & 0xc0U) == 0x40U)
 		return boot_sd_card;
 	if ((boot_src & 0xc0U) == 0x80U)
@@ -280,7 +276,7 @@ static imxrt_boot_src_e imxrt_boot_source(const uint32_t boot_cfg)
 	if (boot_src == 0x10U)
 		return boot_parallel_nor;
 	/* The only upper bits combination not tested by this point is 0b11xx. */
-	return boot_spi_flash_nand;
+	return BOOT_FLEX_SPI;
 }
 
 static bool imxrt_enter_flash_mode(target_s *const target)
